@@ -12,6 +12,16 @@ export const setRefreshing = (refreshing = false) => (dispatch: any) =>
   dispatch(ProducersUpdater.refreshing(refreshing));
 
 export const load = (page = 0, people = [], limit = 20) => (dispatch: any) =>
+  call(
+    page,
+    people,
+    limit,
+  )(dispatch).finally(() => {
+    dispatch(ProducersUpdater.loading(false));
+    dispatch(ProducersUpdater.refreshing(false));
+  });
+
+export const call = (page = 0, people = [], limit = 20) => (dispatch: any) =>
   client
     .get(`rubrique/producteurs/limit/${limit}/offset/${page * limit}`)
     .then(({data}) => {
@@ -23,6 +33,8 @@ export const load = (page = 0, people = [], limit = 20) => (dispatch: any) =>
       if (data.persons.length > 0) {
         dispatch(ProducersUpdater.page(page));
       }
-      dispatch(ProducersUpdater.loading(false));
-      dispatch(ProducersUpdater.refreshing(false));
+      return uniqBy(
+        page === 0 ? data.persons : people.concat(data.persons),
+        'id',
+      );
     });

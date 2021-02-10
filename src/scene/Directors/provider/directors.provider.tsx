@@ -12,6 +12,16 @@ export const setRefreshing = (refreshing = false) => (dispatch: any) =>
   dispatch(DirectorsUpdater.refreshing(refreshing));
 
 export const load = (page = 0, people = [], limit = 20) => (dispatch: any) =>
+  call(
+    page,
+    people,
+    limit,
+  )(dispatch).finally(() => {
+    dispatch(DirectorsUpdater.loading(false));
+    dispatch(DirectorsUpdater.refreshing(false));
+  });
+
+export const call = (page = 0, people = [], limit = 20) => (dispatch: any) =>
   client
     .get(`rubrique/directeurs/limit/${limit}/offset/${page * limit}`)
     .then(({data}) => {
@@ -23,6 +33,8 @@ export const load = (page = 0, people = [], limit = 20) => (dispatch: any) =>
       if (data.persons.length > 0) {
         dispatch(DirectorsUpdater.page(page));
       }
-      dispatch(DirectorsUpdater.loading(false));
-      dispatch(DirectorsUpdater.refreshing(false));
+      return uniqBy(
+        page === 0 ? data.persons : people.concat(data.persons),
+        'id',
+      );
     });

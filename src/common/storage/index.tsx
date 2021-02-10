@@ -1,6 +1,9 @@
+import Queue from 'promise-queue';
 import {sanitizedRaw} from '@nozbe/watermelondb/RawRecord';
 
 import {database, StateItem} from '../../database';
+
+const queue = new Queue(2, Infinity);
 
 async function withCallback(callback: Function, func: Function) {
   try {
@@ -20,44 +23,50 @@ async function withCallback(callback: Function, func: Function) {
 
 export function createWatermelonPersistStorage() {
   async function getItem(key: string, callback: Function) {
-    return withCallback(callback, async function () {
-      return await StateItem.find(key).catch(() => {
-        throw new Error(`Could not get item with key: '${key}'`);
-      });
-    });
+    return withCallback(callback, () =>
+      queue.add(() =>
+        StateItem.find(key)
+          .then((item) => JSON.parse(item.content))
+          .catch(() => {
+            throw new Error(`Could not get item with key: '${key}'`);
+          }),
+      ),
+    );
   }
 
   async function setItem(key: string, value: any, callback: Function) {
-    return withCallback(callback, async function () {
-      return await StateItem.find(key)
-        .then((item) =>
-          database.action(() =>
-            item.update((loadedItem) => {
-              Object.assign(loadedItem, {content: JSON.stringify(value)});
-            }),
+    return withCallback(callback, () =>
+      queue.add(() =>
+        StateItem.find(key)
+          .then((item) =>
+            database.action(() =>
+              item.update((loadedItem) => {
+                Object.assign(loadedItem, {content: JSON.stringify(value)});
+              }),
+            ),
+          )
+          .catch(() =>
+            database.action(() =>
+              StateItem.create((record) => {
+                record._raw = sanitizedRaw(
+                  {id: key, content: JSON.stringify(value)},
+                  StateItem.schema,
+                );
+              }),
+            ),
           ),
-        )
-        .catch(() =>
-          database.action(() =>
-            StateItem.create((record) => {
-              console.log('key', key);
-              console.log('value', value);
-              record._raw = sanitizedRaw(
-                {id: key, content: JSON.stringify(value)},
-                StateItem.schema,
-              );
-            }),
-          ),
-        );
-    });
+      ),
+    );
   }
 
   async function removeItem(key: string, callback: Function) {
-    return withCallback(callback, async function () {
-      await StateItem.find(key).then((item) =>
-        database.action(async () => item.destroyPermanently()),
-      );
-    });
+    return withCallback(callback, () =>
+      queue.add(() =>
+        StateItem.find(key).then((item) =>
+          database.action(async () => item.destroyPermanently()),
+        ),
+      ),
+    );
   }
 
   return {

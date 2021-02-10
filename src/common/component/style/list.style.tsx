@@ -1,7 +1,6 @@
 import {StyleSheet} from 'react-native';
 
 import colors from '../../../assets/style/colors';
-import metrics from '../../../assets/style/metrics';
 
 export default StyleSheet.create({
   container: {
@@ -13,11 +12,15 @@ export default StyleSheet.create({
     marginHorizontal: -20,
   },
   header: {
-    borderRadius: 5,
-    borderStartWidth: 5,
+    marginBottom: 20,
     flexDirection: 'row',
     borderColor: colors.primary,
-    marginBottom: 20,
+  },
+  decoration: {
+    width: 5,
+    borderRadius: 5,
+    borderStartWidth: 5,
+    borderColor: colors.primary,
   },
   headerDivider: {
     flex: 1,
@@ -31,4 +34,5 @@ export default StyleSheet.create({
     paddingHorizontal: 10,
     fontFamily: 'PlayfairDisplay-Regular',
   },
+  loading: {flex: 1, alignItems: 'center', justifyContent: 'center'},
 });

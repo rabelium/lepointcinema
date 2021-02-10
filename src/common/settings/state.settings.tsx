@@ -1,8 +1,20 @@
 export default {
   app: {
+    success: {
+      default: null,
+      persist: false,
+    },
     error: {
       default: null,
       persist: false,
+    },
+    info: {
+      default: null,
+      persist: false,
+    },
+    details: {
+      default: {},
+      persist: true,
     },
   },
   home: {

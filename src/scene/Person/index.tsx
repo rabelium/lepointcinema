@@ -1,4 +1,5 @@
 import {API_URL} from '@env';
+import {connect} from 'react-redux';
 import React, {useEffect, useState} from 'react';
 import {View, Text, FlatList} from 'react-native';
 import ReadMore from 'react-native-read-more-text';
@@ -6,9 +7,9 @@ import ProgressCircle from 'react-native-progress/CircleSnail';
 
 import style from './style/person.style';
 import colors from '../../assets/style/colors';
+import {load} from './provider/person.provider';
 import metrics from '../../assets/style/metrics';
 import Image from '../../common/component/image.component';
-import {load} from '../../common/provider/person.provider';
 import MovieItemComponent from '../../common/component/movie-item.component';
 
 const _renderTruncatedFooter = (handlePress: any) => (
@@ -22,17 +23,13 @@ const _renderRevealedFooter = (handlePress: any) => (
   </Text>
 );
 
-function PersonScene({route}) {
-  const [loading, setLoading] = useState(true);
-  const [infos, setInfos] = useState({});
+function PersonScene({route, load, details = {}}: any) {
+  const loading = !Boolean(details[route?.params?.id]);
+  const infos = details[route?.params?.id] || {};
 
   useEffect(() => {
-    setLoading(true);
-    load(route?.params?.id).then((result) => {
-      setInfos(result);
-      setLoading(false);
-    });
-  }, [route]);
+    load(route?.params?.id, details);
+  }, [route, load]);
   return (
     <View style={style.wrapper}>
       {loading && (
@@ -87,4 +84,11 @@ function PersonScene({route}) {
   );
 }
 
-export default PersonScene;
+const mapStateToProps = (state: any) => ({
+  details: state?.app?.details,
+});
+
+const mapDispatchToProps = (dispatch: any) => ({
+  load: (id: number, details: any) => dispatch(load(id, details)),
+});
+export default connect(mapStateToProps, mapDispatchToProps)(PersonScene);
